@@ -1,0 +1,18 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+python-multipart==0.0.9
+pandas==2.2.2
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.25.1
+langchain==0.2.1
+langchain-core==0.2.1
+langchain-google-genai==1.0.3
+langgraph==0.0.69
+scikit-learn==1.4.2
+numpy==1.26.4
+Pillow==10.3.0
+python-dotenv==1.0.1
+httpx==0.27.0
+# easyocr is optional - install separately if needed:
+# easyocr==1.7.1

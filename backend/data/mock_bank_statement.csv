@@ -1,0 +1,16 @@
+date,description,vendor,amount,type
+2026-03-01,Office Rent – March,Alliance Properties,-45000,debit
+2026-03-02,Client Payment – Invoice #2243,Acme Corp,120000,credit
+2026-03-03,AWS Cloud Services – February,Amazon Web Services,-22000,debit
+2026-03-05,Salary Advance – Operations,HR Department,-18500,debit
+2026-03-06,Client Retainer – Q1,Global Tech,75000,credit
+2026-03-07,Internet & Utilities – February,BSNL Telecom,-9800,debit
+2026-03-08,Project Milestone Payment,XYZ Distributors,200000,credit
+2026-03-10,GST Payment – February Quarter,Income Tax Department,-55000,debit
+2026-03-12,Software Licences – Annual,Adobe Systems,-12000,debit
+2026-03-15,Retainer Fee – Q1,City Logistics Ltd,90000,credit
+2026-03-17,Office Supplies – March,Staples India,-3500,debit
+2026-03-18,Client Payment – Invoice #2289,Prime Supplies,65000,credit
+2026-03-20,Electricity Bill – March,BESCOM,-8200,debit
+2026-03-22,Professional Services – March,McKinsey & Co,-25000,debit
+2026-03-24,Product Sales – March Batch,XYZ Distributors,45000,credit
