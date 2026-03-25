@@ -3,3 +3,7 @@ node_modules/
 frontend/node_modules/
 .next/
 *.node
+venv/
+__pycache__/
+*.pyc
+.env

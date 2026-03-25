@@ -140,11 +140,28 @@ def prioritizer_node(state: AgentState) -> AgentState:
             action = f"MONITOR – {ob.vendor} is manageable; pay by due date."
             suggested_delay = 0
 
-        reasoning_str = (
-            f"Score={score:.2f} | penalty={ob.penalty_rate} | urgency={ob.urgency} | "
-            f"relationship={ob.relationship} (weight={rel_weight})"
-        )
-        cot.append(f"[PRIORITIZER] {ob.vendor}: {reasoning_str}")
+        if ob.relationship == RelationshipType.CRITICAL:
+            reasoning_str = (
+                f"This vendor is critical to our operations. We strongly advise paying the full amount of {ob.amount:,.0f} "
+                f"on schedule to preserve this key relationship and avoid the {ob.penalty_rate*100:.1f}% late penalty."
+            )
+        elif state["dtz_critical"] and ob.relationship == RelationshipType.FLEXIBLE:
+            reasoning_str = (
+                f"Due to the current {state['liquidity_output'].dtz_days}-day Cash Runway warning, deferring this {ob.vendor} payment "
+                f"by {suggested_delay} days will safely trap ₹{ob.amount:,.0f} in our short-term liquidity pool with minimal vendor friction."
+            )
+        elif score > 8:
+            reasoning_str = (
+                f"This payment carries a high risk profile due to its {ob.urgency}/10 urgency and aggressive {ob.penalty_rate*100:.1f}% "
+                f"penalty structure. Settle this as soon as possible."
+            )
+        else:
+            reasoning_str = (
+                f"This obligation has moderate priority. Continue monitoring your cashflow and aim to clear "
+                f"the ₹{ob.amount:,.0f} liability close to the deadline."
+            )
+        
+        cot.append(f"[PRIORITIZER] {ob.vendor}: {score:.2f} Calculated")
 
         prioritized.append(
             PrioritizedObligation(

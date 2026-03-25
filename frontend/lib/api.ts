@@ -4,7 +4,7 @@ import {
   MLPortfolioSummary, InvestmentTip, Obligation
 } from "@/types";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { cache: "no-store", ...init });
@@ -13,7 +13,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // ─── Liquidity ────────────────────────────────────────────────────────────
-export const fetchLiquidity = () => apiFetch<LiquidityData>("/liquidity");
+export const fetchLiquidity = () => apiFetch<LiquidityData>("/liquidity/");
 
 // ─── Simulate drag-defer ──────────────────────────────────────────────────
 export function simulateDelay(obligationId: string, days: number): Promise<SimulateDelayResponse> {
@@ -47,7 +47,7 @@ export const fetchCashBreakdown = () => apiFetch<CashBreakdown>("/dashboard/cash
 export const fetchTransactions = (limit = 100) => apiFetch<{ transactions: Transaction[] }>(`/dashboard/transactions?limit=${limit}`);
 
 // ─── Obligations ──────────────────────────────────────────────────────────
-export const fetchObligations = () => apiFetch<{ obligations: Obligation[] }>("/obligations");
+export const fetchObligations = () => apiFetch<{ obligations: Obligation[] }>("/obligations/");
 
 export function addObligation(data: {
   vendor: string; amount: number; due_date: string;

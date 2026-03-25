@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Obligation } from "@/types";
 import { GripVertical, Building2, Calendar as CalIcon, Mail, Coins } from "lucide-react";
 
@@ -35,15 +35,13 @@ export function ObligationsList({ obligations, onOrderChange, onHoverAction }: O
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
   // Local state for immediate DND visual feedback before backend commit
-  const [localObligations, setLocalObligations] = useState(obligations);
+  const [localPending, setLocalPending] = useState<Obligation[]>([]);
   
-  // Sync if props change
-  React.useEffect(() => {
-    setLocalObligations(obligations);
+  // Isolate pending obligations and sync local state perfectly
+  useEffect(() => {
+    setLocalPending(obligations.filter((o) => o.status === "pending"));
   }, [obligations]);
   
-  const pendingObligations = localObligations.filter((o) => o.status === "pending");
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -52,21 +50,14 @@ export function ObligationsList({ obligations, onOrderChange, onHoverAction }: O
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = pendingObligations.findIndex((o) => o.id === active.id);
-      const newIndex = pendingObligations.findIndex((o) => o.id === over?.id);
+      const oldIndex = localPending.findIndex((o) => o.id === active.id);
+      const newIndex = localPending.findIndex((o) => o.id === over?.id);
       
-      const newItems = arrayMove(pendingObligations, oldIndex, newIndex);
+      // 1. Immediately swap array visually
+      const newItems = arrayMove(localPending, oldIndex, newIndex);
+      setLocalPending(newItems);
       
-      // Update locally immediately
-      const updatedFullList = [...localObligations];
-      const activeItem = updatedFullList.find(o => o.id === active.id);
-      if (activeItem) {
-         // Create a synthetic delay purely for UI immediately
-         activeItem.due_date = new Date(new Date(activeItem.due_date).getTime() + (newIndex - oldIndex) * 3 * 86400000).toISOString().split('T')[0];
-         setLocalObligations(updatedFullList);
-      }
-      
-      // Calculate hypothetical shift based on array position
+      // 2. Fire backend sync async
       const shiftIndex = newIndex - oldIndex;
       onOrderChange(newItems, active.id as string, shiftIndex);
     }
@@ -82,24 +73,24 @@ export function ObligationsList({ obligations, onOrderChange, onHoverAction }: O
   };
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-4 shadow-sm h-full flex flex-col animate-in slide-in-from-left-4 duration-700">
-      <div className="flex justify-between items-center mb-4">
+    <div className="bg-card rounded-3xl border border-border p-5 shadow-sm h-full flex flex-col animate-in slide-in-from-left-4 duration-700">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-lg font-extrabold text-foreground">Upcoming Payments</h3>
-          <p className="text-xs text-muted-foreground">Manage and defer liquidity obligations</p>
+          <p className="text-xs text-muted-foreground font-medium">Manage and defer liquidity liabilities</p>
         </div>
-        <div className="flex bg-muted p-1 rounded-lg">
-          <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground'}`}>List</button>
-          <button onClick={() => setViewMode('calendar')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground'}`}>Calendar</button>
+        <div className="flex bg-muted/60 p-1 rounded-xl border border-border">
+          <button onClick={() => setViewMode('list')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>List</button>
+          <button onClick={() => setViewMode('calendar')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Calendar</button>
         </div>
       </div>
 
       {viewMode === 'list' ? (
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={pendingObligations.map(o => o.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
-                {pendingObligations.map((ob, idx) => (
+            <SortableContext items={localPending.map(o => o.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3 pb-8">
+                {localPending.map((ob, idx) => (
                   <SortableItem key={ob.id} obligation={ob} index={idx} onAction={onHoverAction} />
                 ))}
               </div>
@@ -107,45 +98,58 @@ export function ObligationsList({ obligations, onOrderChange, onHoverAction }: O
           </DndContext>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col">
-          <div className="flex justify-between items-center mb-4 px-2">
-            <button onClick={prevMonth} className="p-1 hover:bg-muted rounded">&lt;</button>
-            <span className="font-bold text-sm">{new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-            <button onClick={nextMonth} className="p-1 hover:bg-muted rounded">&gt;</button>
+        <div className="flex-1 flex flex-col animate-scale-in">
+          <div className="flex justify-between items-center mb-6 px-4 bg-muted/30 py-2 rounded-xl border border-border">
+            <button onClick={prevMonth} className="px-3 py-1 bg-background border border-border hover:bg-muted rounded-lg font-bold text-muted-foreground transition-colors">&lt;</button>
+            <span className="font-black text-sm text-foreground uppercase tracking-widest">{new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+            <button onClick={nextMonth} className="px-3 py-1 bg-background border border-border hover:bg-muted rounded-lg font-bold text-muted-foreground transition-colors">&gt;</button>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground mb-2">
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase text-muted-foreground mb-3">
             <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
           </div>
-          <div className="grid grid-cols-7 gap-2 flex-1">
+          <div className="grid grid-cols-7 gap-2 flex-1 pb-4">
             {/* Simple Calendar Gen */}
             {Array.from({ length: 31 }).map((_, i) => {
               const day = i + 1;
               const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              const dayObs = pendingObligations.filter(o => o.due_date.startsWith(dateStr));
+              const dayObs = localPending.filter(o => o.due_date.startsWith(dateStr));
               
-              if (currentMonth === 1 && day > 28) return null; // Simplified leap year ignore for UI demo
+              if (currentMonth === 1 && day > 28) return null; 
               if ((currentMonth === 3 || currentMonth === 5 || currentMonth === 8 || currentMonth === 10) && day > 30) return null;
 
               return (
-                <div key={day} className={`p-1 border rounded-lg flex flex-col items-center justify-start min-h-[40px] relative transition-all ${dayObs.length > 0 ? 'bg-primary/5 border-primary/20' : 'border-dashed border-border/50'}`}>
-                  <span className="text-[10px] font-medium text-muted-foreground mb-1">{day}</span>
+                <div key={day} className={`p-1 border rounded-xl flex flex-col items-center justify-start min-h-[44px] relative transition-all group ${dayObs.length > 0 ? 'bg-primary/5 border-primary/20 shadow-sm' : 'border-dashed border-border/60 bg-muted/10'}`}>
+                  <span className={`text-[10px] font-bold mb-1 ${dayObs.length > 0 ? 'text-primary' : 'text-muted-foreground'}`}>{day}</span>
                   <div className="flex flex-wrap gap-1 justify-center w-full px-1">
                     {dayObs.map((ob, idx) => (
-                      <div key={idx} className={cn(
-                        "w-full h-1.5 rounded-full cursor-pointer hover:scale-110 transition-transform",
-                        ob.relationship === "Critical" ? "bg-destructive" :
-                        ob.relationship === "Important" ? "bg-yellow-500" : "bg-primary"
-                      )} title={`${ob.vendor} - ₹${ob.amount}`} onClick={() => onHoverAction('email', ob)}></div>
+                      <div key={`dot_${idx}`} className="relative">
+                         <div className={cn(
+                           "w-2 h-2 rounded-full cursor-pointer hover:scale-150 transition-transform shadow-sm",
+                           ob.relationship === "Critical" ? "bg-destructive border border-destructive/50" :
+                           ob.relationship === "Important" ? "bg-yellow-500 border border-yellow-600/50" : "bg-primary border border-primary/50"
+                         )}></div>
+                         
+                         {/* Details Card on Hover */}
+                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 mb-2 w-48 bg-card border border-border rounded-xl shadow-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50 animate-slide-up scale-95 group-hover:scale-100 hidden group-hover:block">
+                            <span className="text-[9px] uppercase font-bold text-muted-foreground block mb-0.5">Assigned Liability</span>
+                            <h4 className="font-extrabold text-xs text-foreground truncate">{ob.vendor}</h4>
+                            <p className="text-sm font-black text-foreground mt-1 mb-2">₹{ob.amount.toLocaleString()}</p>
+                            <div className="flex gap-2">
+                               <button onClick={(e) => {e.stopPropagation(); onAction('email', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-primary/10 text-primary border border-primary/20 rounded hover:bg-primary/20 transition-colors uppercase">Email</button>
+                               <button onClick={(e) => {e.stopPropagation(); onAction('micropayment', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-success/10 text-success border border-success/20 rounded hover:bg-success/20 transition-colors uppercase">Micropay</button>
+                            </div>
+                         </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="mt-4 flex gap-4 justify-center text-[10px] font-bold text-muted-foreground uppercase">
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-destructive"></div> Critical</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-500"></div> Important</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary"></div> Flexible</span>
+          <div className="mt-2 flex gap-4 justify-center text-[9px] font-black tracking-widest uppercase text-muted-foreground bg-muted/30 py-2 rounded-xl border border-border">
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-destructive shadow-sm"></div> Critical</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-sm"></div> Important</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary shadow-sm"></div> Flexible</span>
           </div>
         </div>
       )}
@@ -169,38 +173,38 @@ function SortableItem({ obligation, index, onAction }: { obligation: Obligation;
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative flex flex-col bg-background border border-border rounded-xl transition-all overflow-hidden",
-        isDragging ? "shadow-xl border-primary scale-[1.02] bg-primary/5" : "hover:border-primary/30 hover:shadow-md"
+        "group relative flex flex-col bg-card border border-border rounded-2xl transition-all overflow-hidden cursor-pointer",
+        isDragging ? "shadow-2xl border-primary scale-[1.03] bg-primary/5" : "hover:border-primary/40 hover:shadow-md"
       )}
     >
-      <div className="flex items-center gap-3 p-3 z-10 bg-background relative">
+      <div className="flex items-center gap-4 p-4 z-10 bg-transparent relative">
         <div
           {...listeners}
           {...attributes}
-          className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-primary rounded z-20"
+          className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded-lg z-20 transition-colors"
         >
-          <GripVertical size={18} />
+          <GripVertical size={20} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start">
-            <h4 className="font-bold text-sm truncate flex items-center gap-1.5 text-foreground">
-              <Building2 size={14} className="text-muted-foreground" />
+          <div className="flex justify-between items-start mb-1">
+            <h4 className="font-extrabold text-sm truncate flex items-center gap-1.5 text-foreground">
+              <Building2 size={16} className="text-primary/70" />
               {obligation.vendor}
             </h4>
-            <span className="font-extrabold text-sm text-foreground">₹{obligation.amount.toLocaleString()}</span>
+            <span className="font-black text-sm text-foreground">₹{obligation.amount.toLocaleString()}</span>
           </div>
 
-          <div className="flex justify-between items-center mt-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+          <div className="flex justify-between items-center mt-2.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-black text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border/50 uppercase tracking-widest">
               <CalIcon size={12} />
               {new Date(obligation.due_date).toLocaleDateString()}
-              {obligation.deferred_days > 0 && <span className="text-yellow-600 font-bold ml-1">+{obligation.deferred_days}d</span>}
+              {obligation.deferred_days > 0 && <span className="text-yellow-600 ml-1">+{obligation.deferred_days}d</span>}
             </div>
 
             <span
               className={cn(
-                "text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md",
+                "text-[9px] uppercase tracking-widest font-black px-2 py-1 rounded-lg border",
                 obligation.relationship === "Critical" ? "risk-critical" :
                 obligation.relationship === "Important" ? "risk-important" : "risk-flexible"
               )}
@@ -212,15 +216,15 @@ function SortableItem({ obligation, index, onAction }: { obligation: Obligation;
       </div>
 
       {/* Hover Action Menu Extends Downwards */}
-      <div className="max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 ease-in-out bg-muted/30 border-t border-border flex items-center justify-around overflow-hidden">
-         <button onClick={() => onAction('email', obligation)} className="flex-1 flex flex-col items-center justify-center p-2 text-primary hover:bg-primary/10 transition-colors">
-            <Mail size={16} className="mb-0.5" />
-            <span className="text-[10px] font-bold tracking-wider uppercase">Send Email</span>
+      <div className="max-h-0 opacity-0 group-hover:max-h-24 group-hover:opacity-100 transition-all duration-300 ease-in-out bg-muted/10 border-t border-border flex items-center justify-around overflow-hidden">
+         <button onClick={(e) => {e.stopPropagation(); onAction('email', obligation)}} className="flex-1 flex flex-col items-center justify-center p-3 text-primary hover:bg-primary/10 transition-colors">
+            <Mail size={18} className="mb-1" />
+            <span className="text-[10px] font-black tracking-widest uppercase">Send Email</span>
          </button>
-         <div className="w-px h-8 bg-border"></div>
-         <button onClick={() => onAction('micropayment', obligation)} className="flex-1 flex flex-col items-center justify-center p-2 text-success hover:bg-success/10 transition-colors">
-            <Coins size={16} className="mb-0.5" />
-            <span className="text-[10px] font-bold tracking-wider uppercase">Micropay</span>
+         <div className="w-px h-10 bg-border"></div>
+         <button onClick={(e) => {e.stopPropagation(); onAction('micropayment', obligation)}} className="flex-1 flex flex-col items-center justify-center p-3 text-success hover:bg-success/10 transition-colors">
+            <Coins size={18} className="mb-1" />
+            <span className="text-[10px] font-black tracking-widest uppercase">Micropay</span>
          </button>
       </div>
     </div>
