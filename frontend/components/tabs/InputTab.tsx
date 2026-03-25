@@ -14,50 +14,7 @@ export function InputTab() {
   const [added, setAdded] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const recognitionRef = useRef<any>(null);
-
-  // Initialize Web Speech API
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
-        
-        recognitionRef.current.onresult = (event: any) => {
-          let interimTranscript = "";
-          let finalTranscript = "";
-
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            } else {
-              interimTranscript += event.results[i][0].transcript;
-            }
-          }
-          
-          if (interimTranscript) setVoiceText(interimTranscript);
-          if (finalTranscript) {
-            setVoiceText(finalTranscript);
-            parseAndSetResult(finalTranscript, "Voice Recording");
-          }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-          console.error("Speech error", event.error);
-          setListening(false);
-          setVoiceText("Microphone error or permission denied.");
-        };
-
-        recognitionRef.current.onend = () => {
-          setListening(false);
-        };
-      } else {
-        setErrorMsg("Speech Recognition API not supported in this browser.");
-      }
-    }
-  }, []);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
 
   const parseAndSetResult = (rawText: string, source: string) => {
       // Very basic regex heuristics to pull amount and a probable vendor
@@ -124,20 +81,57 @@ export function InputTab() {
     }
   };
 
-  const toggleVoice = () => {
+  const toggleVoice = async () => {
     setAdded(false);
     setErrorMsg("");
-    if (listening) {
-       recognitionRef.current?.stop();
+    if (listening && recorder) {
+       recorder.stop();
        setListening(false);
     } else {
-       setVoiceText("Listening...");
-       setOcrResult(null);
        try {
-           recognitionRef.current?.start();
+           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+           const newRecorder = new MediaRecorder(stream);
+           
+           const audioChunks: Blob[] = [];
+           newRecorder.ondataavailable = e => {
+               if (e.data.size > 0) audioChunks.push(e.data);
+           };
+           
+           newRecorder.onstop = async () => {
+               const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+               stream.getTracks().forEach(track => track.stop());
+               setVoiceText("Sending to Whisper API...");
+               setOcrResult(null);
+               setUploading(true);
+               
+               try {
+                  const formData = new FormData();
+                  formData.append('file', audioBlob, 'voicenote.webm');
+                  
+                  const res = await fetch("http://127.0.0.1:8000/api/upload/audio", {
+                     method: 'POST',
+                     body: formData
+                  });
+                  if (res.ok) {
+                      const data = await res.json();
+                      setOcrResult(data);
+                      setVoiceText(data.raw_text || "Transcription Complete");
+                  } else {
+                      setVoiceText("Whisper backend failed.");
+                  }
+               } catch(err) {
+                  setVoiceText("Upload error.");
+               } finally {
+                  setUploading(false);
+               }
+           };
+           
+           newRecorder.start();
+           setRecorder(newRecorder);
            setListening(true);
-       } catch (e) {
-           console.error(e);
+           setVoiceText("Recording... Tap again to stop.");
+       } catch (err) {
+           setErrorMsg("Microphone permission denied.");
        }
     }
   };
@@ -242,6 +236,16 @@ export function InputTab() {
                  </div>
               </div>
 
+              {ocrResult.is_duplicate && (
+                 <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-600 p-4 rounded-xl mb-6 flex items-start gap-3 animate-fade-in font-medium shadow-sm">
+                     <AlertCircle size={20} className="mt-0.5 flex-shrink-0"/>
+                     <div>
+                         <p className="font-bold">Duplicate Invoice Prevented</p>
+                         <p className="text-[11px] mt-1 opacity-90 leading-relaxed uppercase tracking-widest font-black">Our deduplication engine flagged this entry ({ocrResult.duplicate_match}). It appears to be already present in your ledger. Double-counting has been safely blocked.</p>
+                     </div>
+                 </div>
+              )}
+
               {added ? (
                 <div className="w-full py-5 bg-success/10 text-success font-black rounded-2xl border border-success/30 flex items-center justify-center gap-3 animate-fade-in shadow-inner text-lg">
                   <CheckCircle2 size={24}/> Instantiated in Global State Array
@@ -251,8 +255,8 @@ export function InputTab() {
                   <button onClick={() => {setOcrResult(null); setVoiceText("");}} className="px-6 py-4 font-black tracking-widest text-muted-foreground uppercase hover:bg-muted rounded-2xl transition-colors flex items-center gap-2 border border-transparent hover:border-border">
                     <RefreshCcw size={18}/> Discard
                   </button>
-                  <button onClick={confirmAndAdd} className="flex-1 gradient-primary text-white font-black text-lg py-4 rounded-2xl hover:opacity-95 shadow-xl shadow-primary/20 flex items-center justify-center gap-3 group transition-all hover:scale-[1.01]">
-                    Inject Validated Data <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
+                  <button onClick={confirmAndAdd} disabled={ocrResult.is_duplicate} className={`flex-1 text-lg py-4 rounded-2xl flex items-center justify-center gap-3 transition-all ${ocrResult.is_duplicate ? 'bg-muted text-muted-foreground cursor-not-allowed font-black uppercase tracking-widest opacity-50' : 'gradient-primary text-white font-black hover:opacity-95 shadow-xl shadow-primary/20 group hover:scale-[1.01]'}`}>
+                    {ocrResult.is_duplicate ? "Blocked (Duplicate)" : "Inject Validated Data"} <ArrowRight size={20} className={!ocrResult.is_duplicate ? "group-hover:translate-x-1 transition-transform" : ""}/>
                   </button>
                 </div>
               )}

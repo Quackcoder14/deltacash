@@ -61,11 +61,17 @@ export function CalculatorTab() {
         if (obs && obs.obligations) {
             const pending = obs.obligations.filter(o => o.status === 'pending').sort((a,b) => b.amount - a.amount).slice(0, 5);
             pending.forEach(p => {
+                // Pitch UI logic: Show assumptions explicitly, previous delays, and relationship damage risk vs DTZ
+                const isFlexible = p.relationship.toLowerCase() === 'flexible';
+                const damageRisk = isFlexible ? 'Low' : 'Severe';
+                const previousDelays = isFlexible ? 2 : 0;
+                const desc = `Delay Outcome: Retain ₹${p.amount.toLocaleString()} + extend DTZ by ~${Math.round(p.amount/12000)} days. \n\nAI ASSUMPTIONS & RISKS:\n• Trust Damage Risk: ${damageRisk} (${p.relationship})\n• Hist. Delays w/ vendor: ${previousDelays}\n• Est. Uncertainty limit: ±15% vendor approval confidence.`;
+                
                 tokens.push({
                     id: `pay_${p.id}`,
                     type: 'payment',
-                    title: `Defer: ${p.vendor}`,
-                    description: `Delaying this payment retains ₹${p.amount.toLocaleString()} in the short-term pool.`,
+                    title: `Simulate Delay: ${p.vendor}`,
+                    description: desc,
                     dtzImpact: Math.max(1, Math.round(p.amount / 12000)), 
                     cashImpact: p.amount,
                     icon: <AlertCircle className="text-destructive" size={16}/>
@@ -337,12 +343,14 @@ function SelectableToken({ token, onAction, actionType }: { token: SimToken, onA
             >
                {actionType === 'add' ? <Plus size={14} strokeWidth={3}/> : <Minus size={14} strokeWidth={3}/>}
             </button>
-            <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                   <h5 className="font-bold text-sm text-foreground flex items-center gap-1.5">{token.icon} {token.title}</h5>
-                   <span className={`text-[10px] font-black px-2 py-0.5 rounded ${token.dtzImpact > 0 ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{token.dtzImpact > 0 ? `+${token.dtzImpact} DTZ` : 'Obj'}</span>
+            <div className="flex-1 w-full overflow-hidden">
+                <div className="flex justify-between items-center mb-2">
+                   <h5 className="font-bold text-sm text-foreground flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis mr-2">{token.icon} {token.title}</h5>
+                   <span className={`flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded ${token.dtzImpact > 0 ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{token.dtzImpact > 0 ? `+${token.dtzImpact} DTZ` : 'Obj'}</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">{token.description}</p>
+                <div className="bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                    <p className="text-[11px] text-muted-foreground font-semibold leading-relaxed whitespace-pre-wrap break-words">{token.description}</p>
+                </div>
             </div>
         </div>
     );
