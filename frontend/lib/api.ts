@@ -74,3 +74,14 @@ export async function uploadFile(file: File): Promise<OCRResult> {
   if (!res.ok) throw new Error("Upload failed");
   return res.json();
 }
+
+// ─── Voice / Text Parse ───────────────────────────────────────────────────
+export async function parseText(text: string): Promise<OCRResult> {
+  const res = await fetch(`${API_BASE}/upload/text-parse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error("Text parse failed");
+  return res.json();
+}
