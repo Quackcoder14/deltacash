@@ -62,7 +62,7 @@ export function SplashLogin({ onLogin }: { onLogin: (user: string) => void }) {
         
         <div className="z-10 flex flex-col items-center">
           <div className="splash-logo mb-6 bg-primary/10 p-6 rounded-3xl border border-primary/20 glow-primary">
-            <Triangle size={80} className="text-primary fill-primary animate-pulse-slow rotate-180" />
+            <Triangle size={80} className="text-primary fill-primary animate-pulse-slow" />
           </div>
           <h1 className="text-5xl font-black tracking-tight text-foreground mb-2 splash-text">
             Delta<span className="text-primary">Cash</span>
@@ -89,7 +89,7 @@ export function SplashLogin({ onLogin }: { onLogin: (user: string) => void }) {
         <div className="absolute top-0 left-0 w-full h-1.5 gradient-primary"></div>
         
         <div className="flex items-center gap-3 mb-6 justify-center">
-          <Triangle size={36} className="text-primary fill-primary rotate-180" />
+          <Triangle size={36} className="text-primary fill-primary" />
           <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Delta<span className="text-primary">Cash</span></h2>
         </div>
 

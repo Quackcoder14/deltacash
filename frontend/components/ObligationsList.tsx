@@ -135,8 +135,8 @@ export function ObligationsList({ obligations, onOrderChange, onHoverAction }: O
                             <h4 className="font-extrabold text-xs text-foreground truncate">{ob.vendor}</h4>
                             <p className="text-sm font-black text-foreground mt-1 mb-2">₹{ob.amount.toLocaleString()}</p>
                             <div className="flex gap-2">
-                               <button onClick={(e) => {e.stopPropagation(); onAction('email', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-primary/10 text-primary border border-primary/20 rounded hover:bg-primary/20 transition-colors uppercase">Email</button>
-                               <button onClick={(e) => {e.stopPropagation(); onAction('micropayment', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-success/10 text-success border border-success/20 rounded hover:bg-success/20 transition-colors uppercase">Micropay</button>
+                               <button onClick={(e) => {e.stopPropagation(); onHoverAction('email', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-primary/10 text-primary border border-primary/20 rounded hover:bg-primary/20 transition-colors uppercase">Email</button>
+                               <button onClick={(e) => {e.stopPropagation(); onHoverAction('micropayment', ob)}} className="flex-1 text-[9px] font-bold py-1 bg-success/10 text-success border border-success/20 rounded hover:bg-success/20 transition-colors uppercase">Micropay</button>
                             </div>
                          </div>
                       </div>

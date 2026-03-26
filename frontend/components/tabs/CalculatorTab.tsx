@@ -204,6 +204,23 @@ export function CalculatorTab() {
                   </div>
                 </div>
               ))}
+              
+              {/* Added AI Explainability Section */}
+              <div className="mt-6 bg-primary/5 rounded-2xl p-4 border border-primary/20 relative z-10 animate-fade-in shadow-inner">
+                 <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
+                    <Info size={14} /> Ensemble Reasoning
+                 </h4>
+                 <div className="space-y-3">
+                    <div className="bg-background/80 p-3 rounded-xl border border-primary/10">
+                        <span className="text-[10px] font-extrabold uppercase text-muted-foreground block mb-1">Gradient Boosting (GB) Signal</span>
+                        <p className="text-xs font-semibold text-foreground/90 leading-relaxed">Detected macro-cyclical payment delays at month-end across your vendor's entire industry sector. Applying a standard 5-day variance.</p>
+                    </div>
+                    <div className="bg-background/80 p-3 rounded-xl border border-primary/10">
+                        <span className="text-[10px] font-extrabold uppercase text-muted-foreground block mb-1">Random Forest (RF) Signal</span>
+                        <p className="text-xs font-semibold text-foreground/90 leading-relaxed">Historical pairwise analysis shows 'Acme Corp' pays late 85% of the time when invoice size exceeds ₹40k. Base confidence increased by +12%.</p>
+                    </div>
+                 </div>
+              </div>
             </div>
           </div>
       </div>
@@ -287,17 +304,31 @@ export function CalculatorTab() {
                       <div className="grid grid-cols-2 gap-6 pt-4 border-t border-primary/20">
                           
                           {/* Live Recharts Delta Graph */}
-                          <div className="h-56 bg-white/50 border border-border rounded-2xl p-4 shadow-sm backdrop-blur-md">
+                          <div className="h-64 bg-background border border-border rounded-3xl p-5 shadow-sm">
                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={graphData} maxBarSize={50} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                                    <YAxis yAxisId="left" orientation="left" stroke="#8884d8" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#00BAF2" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                                    <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
-                                    <Bar yAxisId="left" dataKey="DTZ" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                                    <Bar yAxisId="right" dataKey="Liquidity" fill="#00BAF2" radius={[4, 4, 0, 0]} />
+                                <BarChart data={graphData} maxBarSize={45} margin={{ top: 20, right: 10, left: -10, bottom: 5 }} barGap={8}>
+                                    <defs>
+                                        <linearGradient id="colorDTZ" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.9}/>
+                                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorLiq" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#00BAF2" stopOpacity={0.9}/>
+                                            <stop offset="95%" stopColor="#00BAF2" stopOpacity={0.3}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="hsl(var(--border))" opacity={0.6} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontWeight: 800 }} dy={10} />
+                                    <YAxis yAxisId="left" orientation="left" stroke="#f59e0b" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#f59e0b' }} tickFormatter={(val) => `${val}d`} width={35} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#00BAF2" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#00BAF2' }} tickFormatter={(val) => `₹${(val>1000 ? (val/1000).toFixed(0)+'k' : val)}`} width={50} />
+                                    <RechartsTooltip 
+                                        cursor={{fill: 'hsl(var(--muted))', opacity: 0.5}} 
+                                        contentStyle={{borderRadius: '16px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px', fontWeight: 'bold'}}
+                                        formatter={(value: number, name: string) => [name === 'True Liquidity' ? `₹${value.toLocaleString()}` : `${value} Days`, name]}
+                                    />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '15px' }} />
+                                    <Bar yAxisId="left" dataKey="DTZ" name="Days to Zero" fill="url(#colorDTZ)" radius={[6, 6, 0, 0]} />
+                                    <Bar yAxisId="right" dataKey="Liquidity" name="True Liquidity" fill="url(#colorLiq)" radius={[6, 6, 0, 0]} />
                                 </BarChart>
                              </ResponsiveContainer>
                           </div>

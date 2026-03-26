@@ -25,7 +25,7 @@ export function DashboardLayout({ user }: { user: User }) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary/10 p-2 rounded-xl border border-primary/20">
-              <Triangle size={24} className="text-primary fill-primary rotate-180" />
+              <Triangle size={24} className="text-primary fill-primary" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
               Delta<span className="text-primary">Cash</span>

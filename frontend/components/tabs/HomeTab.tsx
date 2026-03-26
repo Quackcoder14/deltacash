@@ -331,7 +331,11 @@ export function HomeTab() {
 
       {/* Lower Row: Payments */}
       <div className="h-[500px]">
-        <ObligationsList obligations={liquidity.obligations} onOrderChange={handleDragDelay} onHoverAction={openModal} />
+        <ObligationsList 
+          obligations={[...liquidity.obligations].sort((a, b) => b.urgency - a.urgency)} 
+          onOrderChange={handleDragDelay} 
+          onHoverAction={openModal} 
+        />
       </div>
 
       {/* ─── Hover Modals ─── */}

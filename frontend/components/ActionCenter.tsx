@@ -29,13 +29,15 @@ export function ActionCenter({ actions, emails }: ActionCenterProps) {
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
         {actions.map((act, i) => (
-          <div key={`act_${i}`} className="group relative bg-muted/20 border border-border rounded-xl transition-all hover:bg-card hover:border-primary/30 hover:shadow-md cursor-pointer overflow-hidden">
+          <div key={`act_${i}`} className="group relative bg-muted/20 border border-border rounded-xl transition-all hover:bg-card hover:border-primary/30 hover:shadow-md cursor-pointer overflow-hidden flex flex-col">
             
-            <div className="p-4 z-10 relative bg-transparent">
-               <div className="flex justify-between items-center">
+            <div className="p-4 z-10 relative bg-transparent border-b border-border/50">
+               <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-col">
                      <span className="font-extrabold text-sm text-foreground group-hover:text-primary transition-colors">{act.obligation.vendor}</span>
-                     <span className="text-[10px] text-muted-foreground mt-0.5 font-medium">Auto-Strategy Active</span>
+                     <span className="text-[10px] text-muted-foreground mt-0.5 font-medium flex items-center gap-1">
+                        <Brain size={10} className="text-primary"/> Auto-Strategy Active
+                     </span>
                   </div>
                   <span className={cn(
                   "text-[10px] font-extrabold uppercase px-3 py-1 rounded-full",
@@ -46,18 +48,14 @@ export function ActionCenter({ actions, emails }: ActionCenterProps) {
                   {act.recommended_action.replace(/_/g, ' ')} {act.suggested_delay_days > 0 && `(+${act.suggested_delay_days}d)`}
                   </span>
                </div>
-            </div>
-
-            {/* Hover details swoops down with friendly explanation */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-48 group-hover:opacity-100 transition-all duration-500 ease-in-out px-4 pb-4 border-t border-border/0 group-hover:border-border overflow-hidden bg-primary/5">
-                <div className="mt-3 flex gap-3 items-start">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                       <Brain size={12} className="text-primary" />
-                    </div>
-                    <p className="text-xs text-foreground/80 leading-relaxed font-medium">
-                      {act.reasoning.replace(/High Priority/g, "This vendor is critical to operations").replace(/preserve cash|maintain strict compliance/g, "so we strongly advise paying on schedule to prevent disruptions.")}
-                    </p>
-                </div>
+               
+               {/* Reasoning is now always visible */}
+               <div className="mt-3 bg-primary/5 rounded-lg p-3 border border-primary/10">
+                   <p className="text-xs text-foreground/90 leading-relaxed font-medium">
+                     <span className="font-bold text-primary mr-1">AI Insight:</span>
+                     {act.reasoning}
+                   </p>
+               </div>
             </div>
           </div>
         ))}
